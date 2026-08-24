@@ -1,0 +1,34 @@
+from setuptools import setup, find_packages
+
+setup(
+    name='DexRep',
+    version='1.0',
+    description='',
+    packages=find_packages(),
+    install_requires=[
+        'einops==0.8.0',
+        'gym==0.26.2',
+        'h5py==3.11.0',
+        'matplotlib==3.5.1',
+        'numpy==1.21.0',
+        'point-cloud-utils==0.30.4',
+        'tensorboard==2.14.0',
+        'tqdm==4.62.3',
+        'transforms3d==0.4.2',
+        'open3d==0.18.0',
+        'trimesh==4.4.1',
+        'scipy==1.10.1',
+        'pytorch-lightning==1.8.1',
+        'plotly==5.22.0',
+        'dill==0.3.9',
+        'opencv-python==4.10.0.84',
+        'scenepic==1.1.1',
+        'arm_pytorch_utilities==0.4.3',
+        'omegaconf==2.1.1',
+        'zarr==2.13.3',
+        'lxml==5.3.2',
+        'imageio==2.35.1',
+        'imageio-ffmpeg==0.4.9'
+    ],
+    python_requires='>=3.8',
+)

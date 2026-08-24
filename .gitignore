@@ -1,0 +1,43 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+
+ActionDiffusion/bc/saved_models/
+dexgrasp/results/
+dexgrasp/logs/
+logs/
+runs/
+wandb/
+
+*.ckpt
+*.pth
+!dexgrasp/dexrep/pointnet_model/*.pt
+# 서드파티 (install.sh로 재설치 가능 — git clone/pip install -e .로 받은 것들)
+/isaacgym/
+/pytorch3d/
+/TorchSDF/
+/pytorch_kinematics/
+
+# 대용량 데이터 자산 (README 안내대로 별도 다운로드)
+/assets/meshdata/
+/assets/object_75meshdata/
+/assets/object_5048meshdata/
+
+# 체크포인트/학습 산출물 (재현 가능, git엔 안 어울림)
+*.ckpt
+*.pt
+**/saved_models/
+/dexgrasp/runs_demograsp/
+/dexgrasp/results/
+
+# 파이썬
+__pycache__/
+*.pyc
+*.egg-info/
+
+# IDE/OS
+.vscode/
+.DS_Store

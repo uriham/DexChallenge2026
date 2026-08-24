@@ -1,0 +1,290 @@
+graphics_device_id: 0
+
+pnG:
+  sample_method: 'average'
+  sample_num_points: 2048
+  batch_norm_pnfeat: False
+
+dexrep:
+  sample_method: 'average'
+  sample_num_points: 2048
+  batch_norm_pnfeat: False
+  ambient_voxel_length: 0.02
+  dis_max_range: 0.2
+
+trajs_path:
+  train: './dataset_o6_75preproc/train'
+  valid: './dataset_o6_75preproc/valid'
+
+env:
+  env_name: "o6_hand_grasp_dexrep"
+  env_mode: "extract_obs"  #"bc_env_infer"
+  seq_start_pos_uniform: True
+  seq_start_rot_uniform: False
+  test_num: 40
+  bc_model_name: 'ActorCriticDexRep'
+  load_vis_hand_model: True
+  traj_down_sample: False
+
+#  numEnvs: 1024
+  numEnvs: 20
+  envSpacing: 0.55
+  episodeLength: 200 # 250
+  enableDebugVis: False
+  aggregateMode: 1
+
+  random_prior: False
+  random_time: True
+  repose_z: True
+  goal_cond: False
+  num_objs: 40
+
+#  obj_type: 'unseen' # 'seen'
+  obj_type: 'unseen'
+  data_aug: True
+
+  seen_object_code_dict: auto
+  unseen_object_code_dict: auto
+
+  infer_runtime:
+    use_subprocess: True  #启用子进程
+    subprocess_batch_size: 10  #子进程测5个物体
+    subprocess_sleep_secs: 1.0  #停顿
+    rollout_log_every: 10
+    enable_camera_sensors: False
+    record_video: False
+    max_gpu_contact_pairs: 1048576
+    direct_initial_reset: False
+    skip_origin_env: False
+    init_fly_debug: False
+    # Sync the fixed-base virtual wrist before resetting objects. This avoids
+    # the first real env resolving contacts against stale hand poses and
+    # pushing the first object away before rollout starts.
+    reset_warmup_steps: 60
+    reset_root_from_saved_tensor: False
+    refresh_after_reset: True
+    reset_objects_after_env_reset: False
+    sync_hand_before_object_reset: True
+    debug_actor_indices: False
+    debug_env_ids: []
+    debug_first_steps: 0
+
+
+  flat_vis_test: False
+  traj_modify: False
+  use_pre_fixed_actions: False
+  actions_are_normalized: False
+  hand_root_pos: [0.0, 0.0, 0.6]
+  collision_group_offset: 1
+  roll_env_order: 0
+  o6_control_wrist_each_step: True
+  o6_wrist_z_offset: 0.0025
+  o6_initial_wrist_z_offset: 0.0
+  o6_initial_wrist_z_offset_decay_steps: 8
+  o6_initial_wrist_xy_away_offset: 0.0
+  o6_initial_wrist_xy_away_offset_decay_steps: 8
+  exclude_first_env_from_metrics: False
+  prepend_dummy_env0: False
+  o6_policy_obs_mode: "dexrep"
+  wrist_stiffness: 40000.0
+  wrist_damping: 80.0
+  wrist_effort: 1000.0
+  finger_stiffness: 10000.0
+  finger_damping: 20.0
+  finger_effort: 500.0
+#  infer_batch_size: 20
+  infer_batch_size: 2
+
+  set_obj_mass: True
+  obj_mass: 0.02
+  obj_friction: 20
+  random_obj_mass_friction: False
+  tips_add_ang: 0.
+
+  damping_w: 2
+  stiffness_w: 60
+
+  img_save: False
+  viewer_video_save: False
+  each_env_video_save: True
+  random_select_save: False
+
+
+  grasp_data_process: True
+  table_height: 0.6
+
+
+  stiffnessScale: 1.0
+  forceLimitScale: 1.0
+  useRelativeControl: False
+  dofSpeedScale: 20.0
+  actionsMovingAverage: 1.0
+  controlFrequencyInv: 3 #3 #2 #4 # 60 Hz
+
+  startPositionNoise: 0.0
+  startRotationNoise: 0.0
+
+  resetPositionNoise: 0.0
+  resetRotationNoise: 0.0
+  resetDofPosRandomInterval: 0.0
+  resetDofVelRandomInterval: 0.0
+
+  distRewardScale: 20
+  transition_scale: 0.5
+  orientation_scale: 0.1
+  rotRewardScale: 1.0
+  rotEps: 0.1
+  actionPenaltyScale: -0.0002
+  reachGoalBonus: 250
+  fallDistance: 0.4
+  fallPenalty: 0.0
+
+  objectType: "pot" 
+  observationType: "DexRep" #'obs_pcds', obs_h2o #"dexrep"  #"pnG"
+
+
+  obs_dim:
+    prop: 77 # O6 compact proprioceptive state: dof pos, fingertip pose, palm pose, action, object pose
+    dexrep_sensor: 1040
+    dexrep_pnl: 640
+    pnG: 1024
+
+  handAgentIndex: "[[0, 1, 2, 3, 4, 5]]"
+  asymmetric_observations: False
+  successTolerance: 0.1
+  printNumSuccesses: False
+  maxConsecutiveSuccesses: 0
+
+  clip_observations: 5.0
+  asset:
+    assetRoot: "../assets"
+    assetFileName: "linkerhand/o6/right/linkerhand_o6_right6d.urdf"
+    assetFileNameBlock: "urdf/objects/cube_multicolor.urdf"
+    assetFileNameBall: "urdf/objects/ball.urdf"
+    assetFileNameEgg: "mjcf/open_ai_assets/hand/egg.xml"
+    assetFileNamePen: "mjcf/open_ai_assets/hand/pen.xml"
+    assetFileNameObj: "/meshdata/object_5048meshdata/"
+    assetFileNameObj_raw: "/meshdata/object_5048meshdata/"
+
+
+task:
+  randomize: False
+  randomization_params:
+    frequency: 600   # Define how many simulation steps between generating new randomizations
+    observations:
+      range: [ 0, .002 ] # range for the white noise
+      range_correlated: [ 0, .001 ] # range for correlated noise, refreshed with freq `frequency`
+      operation: "additive"
+      distribution: "gaussian"
+      schedule: "linear"   # "constant" is to turn on noise after `schedule_steps` num steps
+      schedule_steps: 40000
+    actions:
+      range: [ 0., .05 ]
+      range_correlated: [ 0, .015 ] # range for correlated noise, refreshed with freq `frequency`
+      operation: "additive"
+      distribution: "gaussian"
+      schedule: "linear"  # "linear" will linearly interpolate between no rand and max rand
+      schedule_steps: 40000
+    sim_params:
+      gravity:
+        range: [ 0, 0.4 ]
+        operation: "additive"
+        distribution: "gaussian"
+        schedule: "linear"  # "linear" will linearly interpolate between no rand and max rand
+        schedule_steps: 40000
+    actor_params:
+      hand:
+        color: True
+        tendon_properties:
+          damping:
+            range: [ 0.3, 3.0 ]
+            operation: "scaling"
+            distribution: "loguniform"
+            schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
+            schedule_steps: 30000
+          stiffness:
+            range: [ 0.75, 1.5 ]
+            operation: "scaling"
+            distribution: "loguniform"
+            schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
+            schedule_steps: 30000
+        dof_properties:
+          damping:
+            range: [ 0.3, 3.0 ]
+            operation: "scaling"
+            distribution: "loguniform"
+            schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
+            schedule_steps: 30000
+          stiffness:
+            range: [ 0.75, 1.5 ]
+            operation: "scaling"
+            distribution: "loguniform"
+            schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
+            schedule_steps: 30000
+          lower:
+            range: [ 0, 0.01 ]
+            operation: "additive"
+            distribution: "gaussian"
+            schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
+            schedule_steps: 30000
+          upper:
+            range: [ 0, 0.01 ]
+            operation: "additive"
+            distribution: "gaussian"
+            schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
+            schedule_steps: 30000
+        rigid_body_properties:
+          mass:
+            range: [ 0.5, 1.5 ]
+            operation: "scaling"
+            distribution: "uniform"
+            schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
+            schedule_steps: 30000
+        rigid_shape_properties:
+          friction:
+            num_buckets: 250
+            range: [ 0.7, 1.3 ]
+            operation: "scaling"
+            distribution: "uniform"
+            schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
+            schedule_steps: 30000
+      object:
+        scale:
+          range: [ 0.95, 1.05 ]
+          operation: "scaling"
+          distribution: "uniform"
+          schedule: "linear"  # "linear" will scale the current random sample by ``min(current num steps, schedule_steps) / schedule_steps`
+          schedule_steps: 30000
+        rigid_body_properties:
+          mass:
+            range: [ 0.5, 1.5 ]
+            operation: "scaling"
+            distribution: "uniform"
+            schedule: "linear"  # "linear" will scale the current random sample by ``min(current num steps, schedule_steps) / schedule_steps`
+            schedule_steps: 30000
+        rigid_shape_properties:
+          friction:
+            num_buckets: 250
+            range: [ 0.7, 1.3 ]
+            operation: "scaling"
+            distribution: "uniform"
+            schedule: "linear"  # "linear" will scale the current random sample by `min(current num steps, schedule_steps) / schedule_steps`
+            schedule_steps: 30000
+
+sim:
+  substeps: 2
+  physx:
+    num_threads: 4
+    solver_type: 1  # 0: pgs, 1: tgs
+    num_position_iterations: 8 # 8 bottle
+    num_velocity_iterations: 0
+    contact_offset: 0.002
+    rest_offset: 0.0
+    bounce_threshold_velocity: 0.2
+    max_depenetration_velocity: 1000.0
+    default_buffer_size_multiplier: 5.0
+  flex:
+    num_outer_iterations: 5
+    num_inner_iterations: 20
+    warm_start: 0.8
+    relaxation: 0.75
