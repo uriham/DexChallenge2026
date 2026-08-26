@@ -1,0 +1,17 @@
+round_success_rates:
+- 0.5673469305038452
+- 0.5755102038383484
+- 0.5469387769699097
+- 0.5959183573722839
+- 0.5387755036354065
+- 0.5673469305038452
+- 0.5836734175682068
+- 0.6122448444366455
+- 0.5795918107032776
+- 0.559183657169342
+mean_success_rate: 0.5726530432701111
+num_envs: 245
+checkpoint: Model_UVLL_HanDex.ckpt (= runs_demograsp/o6_demograsp_2026-08-25_13-53-06/model_2000.pt)
+eval_objects: 64 unseen objects (excluded from the 64 training objects in the same
+  run config.json), 4 trajectories/object
+eval_date: '2026-08-25'

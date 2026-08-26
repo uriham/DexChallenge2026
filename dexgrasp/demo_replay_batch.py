@@ -36,7 +36,7 @@ THIS_DEXGRASP_DIR = osp.realpath(osp.dirname(__file__))
 # ---- 설정 ----
 DEMO_PKL = osp.join(THIS_DEXGRASP_DIR, "demos", "core-bottle-be16ada66829940a451786f3cbfd6769_traj0.pkl")
 SOURCE_PREPROC_DIR = "/data/DexGraspMotionChallenge2026/dataset_shinwoo_preproc/train"
-ALIGN_OBJECT_ROTATION = True  # False면 기존(위치만 정렬) 동작 재현
+ALIGN_OBJECT_ROTATION = False  # 8/25: 위치만 정렬이 더 나음(14%>4.8%) 확인됨 -> 새 demograsp_warp.py 코드로 재검증
 
 TARGET_OBJECT_CODES = [
     "core-bottle-be16ada66829940a451786f3cbfd6769",  # 진단용: 데모를 만든 그 병 자기 자신
@@ -144,13 +144,8 @@ def main():
     hand_root_offset = (palm_pos - start_wrist6[:, 0:3]).mean(axis=0)
     print("hand_root_offset c =", np.round(hand_root_offset, 6))
 
-    if not ALIGN_OBJECT_ROTATION:
-        # 기존 동작 재현: 물체 회전을 무시(전부 항등 쿼터니언)하고 위치만 정렬
-        demo = dict(demo)
-        demo["obj_quat_world"] = np.tile(np.array([[0.0, 0.0, 0.0, 1.0]]), (demo["T"], 1))
-        obj_quat0 = np.tile(np.array([[0.0, 0.0, 0.0, 1.0]]), (task.num_envs, 1))
-
-    demo_ref = DemoReference(demo, hand_root_offset)
+    # align_rotation은 이제 DemoReference 자체의 정식 옵션 (demograsp_env.py와 동일 코드 경로).
+    demo_ref = DemoReference(demo, hand_root_offset, align_rotation=ALIGN_OBJECT_ROTATION)
     finger_limits = (
         task.o6_hand_dof_lower_limits[task.actuated_dof_indices].cpu().numpy(),
         task.o6_hand_dof_upper_limits[task.actuated_dof_indices].cpu().numpy(),

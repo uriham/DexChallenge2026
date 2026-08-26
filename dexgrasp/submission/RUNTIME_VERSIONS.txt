@@ -1,0 +1,42 @@
+DexGraspMotionChallenge2026 - Validated Runtime Versions
+Validated on: 2026-08-25 / 2026-08-26
+
+--- Hardware ---
+GPU: NVIDIA GeForce RTX 3090 (24GB)
+NVIDIA driver: 580.173.02
+
+--- OS / build tools (actually used; differs from README's documented target, noted for transparency) ---
+OS: Ubuntu 22.04.2 LTS (README documents/targets Ubuntu 20.04.3 LTS)
+gcc: 11.4.0 (README documents/targets 8.4.0)
+g++: 11.4.0 (README documents/targets 8.4.0)
+Everything below installed and ran successfully on this OS/toolchain combination
+despite the version difference from README's stated target.
+
+--- Conda environment ---
+conda env name: DexGraspMotionChallenge2026
+python: 3.8.19
+
+--- Core packages (as installed via README's install.sh) ---
+torch: 1.12.1+cu113 (torch.version.cuda: 11.3)
+torchvision: 0.13.1+cu113
+torchaudio: 0.12.1+cu113
+isaacgym: 1.0.preview4
+pytorch3d: 0.7.9
+torchsdf: 0.1.0
+pytorch_kinematics: 0.3.0
+omegaconf: 2.1.1
+pytorch_lightning: 1.8.1
+numpy: 1.21.0
+pyyaml: 6.0.3
+scipy: 1.10.1
+
+--- Notes ---
+- IsaacGym requires `import` order: isaacgym-touching modules (utils.config,
+  utils.parse_task, etc.) must be imported before `import torch`, otherwise
+  raises "PyTorch was imported before isaacgym modules".
+- If `ImportError: libpython3.8.so.1.0: cannot open shared object file` occurs,
+  run: sudo apt install libpython3.8-dev (per README) and/or ensure
+  LD_LIBRARY_PATH includes the conda env's lib directory.
+- Reproduce this file with:
+    conda list -n DexGraspMotionChallenge2026 > RUNTIME_VERSIONS_full.txt
+  (full dump; this file lists only the packages relevant to running inference)
