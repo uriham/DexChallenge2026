@@ -36,9 +36,12 @@ env_mode='bc_env_infer'에서도 매 스텝 12D 전체가 그대로 적용된다
     DEXGRASP_EVAL_OBJECTS=core-bottle-...,core-jar-...,... \
     python demograsp_bc_infer.py --headless
 
-DEXGRASP_EVAL_OBJECTS를 생략하면 DEXGRASP_HELD_OUT_N개를(기본 8, 스모크용) 학습 실행의
-config.json(object_codes)을 제외한 후보 풀에서 샘플링한다(DEMOGRASP_EXCLUDE_TRAIN_RUN로
-학습 run 디렉터리 지정, train_demograsp.py의 sample_training_objects와 동일 로직 재사용).
+DEXGRASP_EVAL_OBJECTS를 생략하면 (README에 문서화된 bc_env_infer.py 기본 동작과 동일하게)
+DEXGRASP_EVAL_DATA_DIR 경로의 .npy 전체를 스캔해서 그 안의 모든 오브젝트를 검증한다
+(bc_env_infer.py의 get_mode_object_codes/list_object_codes_from_dir 재사용, split_o6_dataset_by_*.py가
+오브젝트 단위가 아니라 궤적 단위로 train/valid를 나누므로 "오브젝트 개수 제한"은 더 이상 기본이 아님).
+DEMOGRASP_EXCLUDE_TRAIN_RUN으로 학습 run 디렉터리를 주면 그 결과에서 학습에 쓴 오브젝트만 뺀다.
+DEXGRASP_HELD_OUT_N(선택)을 주면 스캔 결과를 그 개수로 잘라 스모크 테스트에 쓸 수 있다.
 """
 import os
 import os.path as osp
@@ -71,7 +74,7 @@ from utils.process_marl import get_AgentIndex  # noqa: E402
 from demograsp_warp import DemoReference, build_full_plan  # noqa: E402
 from demograsp_env import OBS_DIM, NUM_PCL_POINTS  # noqa: E402  (관측 레이아웃 재사용)
 from demograsp_port.ppo_onestep.module import ActorCritic  # noqa: E402
-from train_demograsp import build_train_param, sample_training_objects  # noqa: E402
+from train_demograsp import build_train_param  # noqa: E402
 
 import torch  # noqa: E402  (isaacgym이 위 import들에서 먼저 로드된 뒤에 torch를 import해야 함)
 
@@ -208,23 +211,38 @@ def build_demograsp_actor_critic(ckpt_path, device):
     return actor_critic
 
 
-def resolve_eval_objects():
-    """DEXGRASP_EVAL_OBJECTS가 있으면 그대로 쓰고, 없으면 학습에 쓰지 않은 오브젝트를
-    train_demograsp.sample_training_objects(exclude_codes=...)와 동일 로직으로 샘플링한다."""
+def resolve_eval_objects(mode):
+    """DEXGRASP_EVAL_OBJECTS가 있으면 그 목록을 그대로 쓰고, 없으면 bc_env_infer.py의
+    get_mode_object_codes(mode)를 그대로 재사용해 DEXGRASP_EVAL_DATA_DIR 경로의 .npy
+    전체를 스캔한다 (README가 문서화한 bc_env_infer.py 기본 동작과 동일 - "경로만 주면
+    그 안의 모든 파일을 검증"). 호출 시점에 bci.cfg가 이미 채워져 있어야 한다.
+
+    split_o6_dataset_by_object.py/by_distribution.py를 보면 train/valid는 오브젝트
+    단위가 아니라 "오브젝트마다의 궤적"을 나눈 것이라, 오브젝트 자체는 양쪽에 다 존재할 수
+    있다. 그래서 DEMOGRASP_EXCLUDE_TRAIN_RUN으로 학습 run의 config.json을 주면, 스캔
+    결과에서 그 학습에 쓴 오브젝트 코드만 제외한다(궤적이 아니라 오브젝트 단위 제외)."""
     explicit = env_str("DEXGRASP_EVAL_OBJECTS", "")
     if explicit:
-        return [c.strip() for c in explicit.split(",") if c.strip()]
+        codes = [c.strip() for c in explicit.split(",") if c.strip()]
+    else:
+        codes = bci.get_mode_object_codes(mode)
 
-    n = env_int("DEXGRASP_HELD_OUT_N", 8)
     exclude_run = env_str("DEMOGRASP_EXCLUDE_TRAIN_RUN", "")
-    exclude_codes = None
     if exclude_run:
         import json
         config_path = osp.join(exclude_run, "config.json")
         with open(config_path, "r") as f:
-            exclude_codes = json.load(f).get("object_codes", [])
-    npy_list = sample_training_objects(num_objects=n, traj_per_object=1, seed=0, exclude_codes=exclude_codes)
-    return [d["obj_code"] for d in npy_list]
+            exclude_set = set(json.load(f).get("object_codes", []))
+        before = len(codes)
+        codes = [c for c in codes if c not in exclude_set]
+        print("exclude_codes: {}개 제외 대상 중 {}개가 후보 풀에서 제거됨 ({} -> {})".format(
+            len(exclude_set), before - len(codes), before, len(codes)
+        ))
+
+    n = env_int("DEXGRASP_HELD_OUT_N", 0)
+    if n > 0:
+        codes = codes[:n]
+    return codes
 
 
 def main():
@@ -243,23 +261,32 @@ def main():
     args.task = "o6HandGraspDexRepIjrr"
     args.cfg_env = "cfg/o6_hand_grasp_dexrep_ijrr.yaml"
     cfg, cfg_train, logdir = load_cfg(args)
-    get_AgentIndex(cfg)
+    agent_index = get_AgentIndex(cfg)
+
+    # yaml 기본값은 o6_policy_obs_mode: "dexrep"(:88). 원래 bc_env_infer.py는 create_bc_model()이
+    # ActorCriticDexRep 계열 정책일 때 이 값을 세팅해주는데, 우리는 create_bc_model() 대신
+    # build_demograsp_actor_critic()을 쓰므로 아무도 이걸 안 건드려 yaml 기본값이 그대로 남는다.
+    # train_demograsp.py:build_env()(검증된 57.27% 결과가 나온 경로)와 동일하게 맞춘다.
+    cfg['env']['o6_policy_obs_mode'] = 'prev_action_obj_rot'
 
     if os.environ.get("DEXGRASP_EVAL_DATA_DIR"):
         cfg['trajs_path']['train'] = os.environ["DEXGRASP_EVAL_DATA_DIR"]
         cfg['trajs_path']['valid'] = os.environ["DEXGRASP_EVAL_DATA_DIR"]
 
-    if cfg['env']['obj_type'] in ['seen', 'one']:
-        cfg['env'].setdefault('seen_object_code_dict', 'auto')
-    else:
-        cfg['env'].setdefault('unseen_object_code_dict', 'auto')
-
-    eval_objects = resolve_eval_objects()
     cfg['env']['obj_type'] = env_str("DEXGRASP_OBJ_TYPE", cfg['env'].get('obj_type', 'unseen'))
     object_code_key = (
         'seen_object_code_dict' if cfg['env']['obj_type'] in ['seen', 'one']
         else 'unseen_object_code_dict'
     )
+    cfg['env'].setdefault(object_code_key, 'auto')
+
+    # bc_env_infer 모듈의 전역을 먼저 채운다 - resolve_eval_objects()가 bci.get_mode_object_codes()로
+    # bci.cfg(trajs_path/obj_type)를 읽어 디렉터리를 스캔하므로, 이 시점 이전에 채워져 있어야 함.
+    # agent_index도 bci.create_env()(내부 parse_task 호출)가 모듈 전역으로 참조하므로 같이 채움
+    # (안 채우면 NameError: name 'agent_index' is not defined - bc_env_infer.py:162).
+    bci.args, bci.cfg, bci.cfg_train, bci.agent_index = args, cfg, cfg_train, agent_index
+
+    eval_objects = resolve_eval_objects(cfg['env']['obj_type'])
     cfg['env'][object_code_key] = eval_objects
 
     if os.environ.get("DEXGRASP_INFER_BATCH_SIZE"):
@@ -267,16 +294,12 @@ def main():
     if os.environ.get("DEXGRASP_TEST_NUM"):
         cfg['env']['test_num'] = int(os.environ["DEXGRASP_TEST_NUM"])
 
-    # bc_env_infer 모듈의 전역을 채워서 create_env()/test_env가 참조할 수 있게 함
-    # (bc_env_infer.py는 args/cfg/cfg_train을 모듈 전역으로 참조하지 인자로 받지 않음).
-    bci.args, bci.cfg, bci.cfg_train = args, cfg, cfg_train
-
     device = args.rl_device
     print("loading DemoGrasp checkpoint:", ckpt_path)
     actor_critic = build_demograsp_actor_critic(ckpt_path, device)
 
     mode = cfg['env']['obj_type']
-    obj_id_list = bci.get_mode_object_codes(mode)
+    obj_id_list = eval_objects
     batch_size = cfg['env']['infer_batch_size']
 
     bc_info_name = "demograsp_{}_test_num{}".format(

@@ -1,42 +1,48 @@
-DexGraspMotionChallenge2026 - Validated Runtime Versions
-Validated on: 2026-08-25 / 2026-08-26
-
---- Hardware ---
-GPU: NVIDIA GeForce RTX 3090 (24GB)
+Validated runtime for Model_UVLL_HanDex.ckpt
+=================================================
+Host OS: Ubuntu 22.04.2 LTS
+Kernel: 6.8.0-136-generic
+GPU observed during setup: NVIDIA GeForce RTX 3090, 24 GB
 NVIDIA driver: 580.173.02
-
---- OS / build tools (actually used; differs from README's documented target, noted for transparency) ---
-OS: Ubuntu 22.04.2 LTS (README documents/targets Ubuntu 20.04.3 LTS)
-gcc: 11.4.0 (README documents/targets 8.4.0)
-g++: 11.4.0 (README documents/targets 8.4.0)
-Everything below installed and ran successfully on this OS/toolchain combination
-despite the version difference from README's stated target.
-
---- Conda environment ---
-conda env name: DexGraspMotionChallenge2026
-python: 3.8.19
-
---- Core packages (as installed via README's install.sh) ---
-torch: 1.12.1+cu113 (torch.version.cuda: 11.3)
-torchvision: 0.13.1+cu113
-torchaudio: 0.12.1+cu113
-isaacgym: 1.0.preview4
+Driver-reported CUDA compatibility: 13.0
+Challenge Conda environment: DexGraspMotionChallenge2026
+Python: 3.8.19
+PyTorch-bundled CUDA runtime: 11.3 (torch==1.12.1+cu113, per this repo's install.sh;
+  no separate `cudatoolkit` conda package installed — the pip wheel bundles its own)
+System CUDA toolkit (left unchanged, only used to compile native extensions): 12.6
+GCC: 11.4.0 (/usr/bin/gcc) — note: this repo's README documents/targets gcc 8.4.0,
+  but gcc-8 is not installed on this host and was not needed; pytorch3d,
+  TorchSDF, pytorch_kinematics, and IsaacGym's gymtorch extension all built
+  and ran correctly against system gcc 11.4.0.
+G++: 11.4.0 (/usr/bin/g++)
+PyTorch: 1.12.1+cu113
+PyTorch Lightning: 1.8.1
+NumPy: 1.21.0
+OmegaConf: 2.1.1
+Isaac Gym: Preview 4 (1.0.preview4)
 pytorch3d: 0.7.9
-torchsdf: 0.1.0
+TorchSDF: 0.1.0
 pytorch_kinematics: 0.3.0
-omegaconf: 2.1.1
-pytorch_lightning: 1.8.1
-numpy: 1.21.0
-pyyaml: 6.0.3
-scipy: 1.10.1
+PyYAML: 6.0.3
+SciPy: 1.10.1
 
---- Notes ---
-- IsaacGym requires `import` order: isaacgym-touching modules (utils.config,
-  utils.parse_task, etc.) must be imported before `import torch`, otherwise
-  raises "PyTorch was imported before isaacgym modules".
-- If `ImportError: libpython3.8.so.1.0: cannot open shared object file` occurs,
-  run: sudo apt install libpython3.8-dev (per README) and/or ensure
-  LD_LIBRARY_PATH includes the conda env's lib directory.
-- Reproduce this file with:
-    conda list -n DexGraspMotionChallenge2026 > RUNTIME_VERSIONS_full.txt
-  (full dump; this file lists only the packages relevant to running inference)
+Required runtime environment (verified — without this, IsaacGym fails to import):
+  export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
+
+If Isaac Gym reports a missing libpython3.8.so.1.0:
+  sudo apt update
+  sudo apt install libpython3.8-dev
+  (and/or apply the LD_LIBRARY_PATH export above — this is what fixed it here)
+
+Other notes specific to this environment:
+- Import order matters: isaacgym-touching modules (utils.config, utils.parse_task,
+  etc.) must be imported before `import torch`, or IsaacGym raises "PyTorch was
+  imported before isaacgym modules".
+- `cfg/o6_hand_grasp_dexrep_ijrr.yaml` contains a non-ASCII (UTF-8) comment; if
+  the shell's locale is not UTF-8, `yaml.load()` raises
+  `UnicodeDecodeError: 'ascii' codec can't decode byte ...`. Fix by running with
+  `PYTHONUTF8=1` (forces UTF-8 regardless of system locale).
+
+Reproduce the full package list with:
+  conda list -n DexGraspMotionChallenge2026 > RUNTIME_VERSIONS_full.txt
+(this file lists only the packages relevant to running inference)
